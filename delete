@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ -z "$1" ]
+then
+  echo "This command deletes a git repository. You must specify name of repository"
+  exit 1
+fi
+
+rep="$HOME/$1.git"
+
+if [ -d $rep ]
+then
+  read -r -p "Are you sure you want to delete $1 repository? [Y/n] " response
+  if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
+  then
+    rm -rf $rep
+    if [ $? -eq 0 ] ; then
+      echo "Deleted successfully."
+    else
+      echo "Some error occured (rm returned $?)."
+      exit 3
+    fi
+  fi
+else
+  echo "The specified git repository was not found."
+  exit 2
+fi

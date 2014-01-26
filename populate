@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# this script expands bundle files into .git dirs
+# req: user tvc running Dropbox
+# req: user git accessing /home/tvc/Dropbox
+
+
+DIR1="/home/tvc/Dropbox/git/$USER"
+DIR2="$HOME"
+
+for BUNDLE in $( find $DIR1 -name *.bundle ); do
+  echo $BUNDLE
+  DIR2="${BUNDLE#/home/tvc/Dropbox/git/}"
+  DIR2="/home/${DIR2}"
+  DIR2="$(dirname $DIR2)"
+  mkdir -p "$DIR2"
+  cd "$DIR2"
+  git clone "$BUNDLE"
+done

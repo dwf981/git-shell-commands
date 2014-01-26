@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ -z "$1" ]
+then
+  echo "You must specify name of repository"
+  exit 1
+fi
+
+git init --bare $1.git

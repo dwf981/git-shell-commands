@@ -1,0 +1,343 @@
+#! /bin/bash
+
+
+##
+## shows a list of repositories
+##
+showRepoList() {
+
+	LIST_ITEMS=""
+	ITEM_COUNT=0
+	for REPO in ${PWD}/*.git
+	do
+		DIRNAME=$(basename "$REPO")
+		LABEL=$(echo $DIRNAME | sed 's/ /\\ /g')
+		if [ -d "$REPO" ] && [ "git" = "${REPO##*.}" ] ; then
+			LIST_ITEMS="${LIST_ITEMS}$LABEL - OFF "
+			((ITEM_COUNT++))
+		fi
+	done
+
+	if [ $ITEM_COUNT = 0 ]; then
+		whiptail --title "Notice" --msgbox "No git repositiories exist in the current directory." 8 78
+	else
+	
+		if [ "$choice" = "Delete" ] ; then
+			MSG_LIST_TITLE="Curent directory is [$WD].\nChoose the repositories to delete:"
+			MSG_YN_QUESTION="Are you sure you want to delete"
+		fi
+
+		if [ "$choice" = "Move" ] ; then
+			MSG_LIST_TITLE="Curent directory is [$WD].\nChoose the repositories to move:"
+			MSG_YN_QUESTION="Are you sure you want to move"
+		fi
+		
+		CHOSEN_REPOS=$(whiptail --title "Repository List" --checklist "$MSG_LIST_TITLE" 28 78 20 $LIST_ITEMS 3>&2 2>&1 1>&3)
+		
+		
+		## use arrays of files/dirs
+		FILES_ARRAY=()
+		DIRS_ARRAY=()
+		
+		if [ ! -z "CHOSEN_REPOS" ] ; then
+			for REPO in $CHOSEN_REPOS; do
+				REPO_DIRNAME=$(echo $REPO | sed -e 's\^"\\g' -e 's\"$\\g')
+				REPO_BARE_DIR_PATH=$PWD/$REPO_DIRNAME
+				REPO_BUNDLE_FILE_PATH=$(echo $REPO_BARE_DIR_PATH.bundle | sed 's\^/home/\/home/tvc/Dropbox/git/\g')
+				
+				if [ -f $REPO_BUNDLE_FILE_PATH ] ; then FILES_ARRAY+=("$REPO_BUNDLE_FILE_PATH"); fi
+				if [ -d $REPO_BARE_DIR_PATH ] ; then DIRS_ARRAY+=("$REPO_BARE_DIR_PATH"); fi
+
+			done
+			
+			COUNT_FILES=${#FILES_ARRAY[@]}
+			COUNT_DIRS=${#DIRS_ARRAY[@]}
+			COUNT_TOTAL=$(($COUNT_FILES+COUNT_DIRS))
+
+			
+			##
+			## check array sizes and ask user
+			##
+			if [ $COUNT_TOTAL != 0 ] ; then
+			
+				ALLOK=1
+				
+				##
+				## delete specified files
+				##
+				if [ "$choice" = "Delete" ] ; then
+					whiptail --title "Question" --yesno "$MSG_YN_QUESTION $COUNT_FILES files and $COUNT_DIRS directories?" 8 78
+					if [ $? = 0 ]; then
+						ALLOK=1
+						for f in "${FILES_ARRAY[@]}"; do
+							rm -f "$f"
+							[ $? != 0 ] && ALLOK=0
+						done
+						for d in "${DIRS_ARRAY[@]}"; do
+							rm -rf "$d"
+							[ $? != 0 ] && ALLOK=0
+						done
+					fi
+				fi
+
+				
+				##
+				## move the specified files
+				##
+				if [ "$choice" = "Move" ] ; then
+					SRC_PATH="${PWD#/home/git}"
+					#DEST_PATH=$(whiptail --inputbox " Moving $COUNT_FILES files and $COUNT_DIRS directories\nCurrent path is '$WD'\nPlease enter the new path: " 8 78 $INIT --title "Move repos" 3>&1 1>&2 2>&3)
+                    DEST_PATH=$(whiptail --title "Repository List" --menu "$GITPATH" 28 78 20 \
+                    "/" "" \
+                    "/All" "" \
+                    "/Windows" "" \
+                    "/Windows/MFC" "" \
+                    "/Windows/WINAPI" "" \
+                    "/Windows/Console" "" \
+                    "/Windows/Driver" "" \
+                    "/Windows/Shell" "" \
+                    "/Apple" "" \
+                    "/Apple/iOS" "" \
+                    "/Unix" "" \
+                    "/Unix/Posix" "" \
+                    "/Unix/Shell" "" \
+                    "/Unix/Ruby" "" \
+                    "/Unix/Config" "" \
+                    3>&2 2>&1 1>&3)
+
+
+					if [ $? = 0 ] && [ ! -z "$DEST_PATH" ] ; then
+						if [ -d "/home/git$DEST_PATH" ] ; then
+							if [ "$DEST_PATH" != "$SRC_PATH" ] ; then
+								for SRC in "${FILES_ARRAY[@]}"; do
+									SRC_BASENAME=$(basename "$SRC")
+									DST=${SRC%/$SRC_BASENAME}
+									DST="${DST%$SRC_PATH}"
+									DST="$DST$DEST_PATH"
+									DST=${DST%/}
+									DST="$DST/$SRC_BASENAME"
+									mv -f "$SRC" "$DST"
+									[ $? != 0 ] && ALLOK=0
+								done
+								for SRC in "${DIRS_ARRAY[@]}"; do
+									SRC_BASENAME=$(basename "$SRC")
+									DST=${SRC%/$SRC_BASENAME}
+									DST="${DST%$SRC_PATH}"
+									DST="$DST$DEST_PATH"
+									DST=${DST%/}
+									DST="$DST/$SRC_BASENAME"
+									mv -f "$SRC" "$DST"
+									[ $? != 0 ] && ALLOK=0
+								done
+							else
+								whiptail --title "Error" --msgbox "Destination directory is the same as current directory." 8 78
+								ALLOK=0
+							fi
+						else
+							whiptail --title "Error" --msgbox "Destination directory does not exist." 8 78
+							ALLOK=0
+						fi
+					else
+						ALLOK=0
+					fi
+				fi
+				
+				[ $ALLOK = 1 ] && whiptail --title "Notice" --msgbox "Finished successfully." 8 78
+				[ $ALLOK != 1 ] && whiptail --title "Error" --msgbox "There were some problems processing the specified files." 8 78
+			fi
+		fi
+	fi
+}
+
+##
+## shows a list of repositories
+##
+changeDirectory() {
+	LIST_ITEMS=".. Parent "
+	ITEM_COUNT=1
+
+	if [ "$WD" = "/" ] ; then
+		LIST_ITEMS=""
+		ITEM_COUNT=0
+	fi
+
+	for REPO in ${PWD}/*
+	do
+		DIRNAME=$(basename "$REPO")
+		if [ -d "$REPO" ] && [ "git" != "${REPO##*.}" ] ; then
+			DETAILS=$(du -hs "$REPO" | cut -f1)
+			LIST_ITEMS="${LIST_ITEMS}$DIRNAME $DETAILS "
+			((ITEM_COUNT++))
+		fi
+	done
+
+	if [ $ITEM_COUNT != 0 ] ; then
+		CHOSEN_REPO=$(whiptail --title "Repository List" --menu "$GITPATH" 28 78 20 $LIST_ITEMS 3>&2 2>&1 1>&3)
+		cd "$CHOSEN_REPO"
+	fi
+}
+
+
+addRepository() {
+	NEW_REPO=$(whiptail --inputbox "Choose a name (no .git extension):" 8 78 --title "Create Repository" 3>&1 1>&2 2>&3)
+	if [ ! -z "$NEW_REPO" ]; then
+		git init --bare "$NEW_REPO.git"
+		if [ $? = 0 ]; then
+			whiptail --title "Notice" --msgbox "Successfully created new repo at ${GITPATH}/${NEW_REPO}.git" 8 78
+		else
+			whiptail --title "Error" --msgbox "Failed to create $PWD/$NEW_REPO.git." 8 78
+		fi
+	fi
+}
+
+
+listRepositories() {
+	LIST_ITEMS=""
+	ITEM_COUNT=0
+	for REPO in ${PWD}/*.git
+	do
+		DIRNAME=$(basename "$REPO")
+		if [ -d "$REPO" ] && [ "git" = "${REPO##*.}" ] ; then
+			DETAILS=$(du -hs "$REPO" | cut -f1)
+			LIST_ITEMS="${LIST_ITEMS}$DIRNAME $DETAILS "
+			((ITEM_COUNT++))
+		fi
+	done
+	
+	if [ $ITEM_COUNT = 0 ]; then
+		whiptail --title "Notice" --msgbox "No git repositiories exist in the current directory." 8 78
+	else
+		CHOSEN_REPO=$(whiptail --title "Repository List" --menu "$GITPATH" 28 78 20 $LIST_ITEMS 3>&2 2>&1 1>&3)
+		#cd "$CHOSEN_REPO"
+	fi
+}
+
+showRepoDetails() {
+     dialog --title "GIT Repository" --msgbox "You can clone the repository from the following address: git@gnom.ro:$WD/$1" 6 60
+}
+
+
+status="0"
+cd /home/git
+
+
+##
+## show main menu in a loop
+##
+while [ "$status" -eq 0 ] 
+do
+	WD="$PWD"
+	[[ "$WD" =~ ^"$HOME"(/|$) ]] && WD="${WD#$HOME}"
+	[ -z "$WD" ] && WD=/
+	GITPATH="git@gnom.ro:$WD"
+	
+	LIST_ITEMS=""
+	LIST_ITEMS="${LIST_ITEMS}..           $WD"
+	LIST_ITEMS="${LIST_ITEMS}Add  		Create new repo."
+	LIST_ITEMS="${LIST_ITEMS}Delete		Delete repo(s)."
+	LIST_ITEMS="${LIST_ITEMS}Move  		Move repos from one directory to another."
+	LIST_ITEMS="${LIST_ITEMS}List  		Show all repos."
+	LIST_ITEMS="${LIST_ITEMS}File1  	desc1"
+
+	## Add main options
+	options=()
+	options+=("Add     "	" - Create new repo.")
+	options+=("Delete  "	" - Delete repo(s).")
+	options+=("Move    "	" - Move repos from one directory to another.")
+	options+=("List    "    " - Show all repos.")
+	options+=("" "")
+	
+	## add directories
+    if [ "$WD" != "/" ] ; then 
+        options+=("[..]"	"    $WD")
+    fi
+
+	for DIR in ${PWD}/*
+	do
+        DIR_NAME=$(basename "$DIR")
+		if [ -d "$DIR" ] && [ "git" != "${DIR##*.}" ] ; then
+            options+=("[$DIR_NAME]" "")
+		fi
+	done
+    options+=("" "")
+
+    ## add .git repositories
+    ITEM_COUNT=0
+    for REPO in ${PWD}/*.git
+	do
+        REPO_NAME=$(basename "$REPO")
+		if [ -d "$REPO" ] && [ "git" = "${REPO##*.}" ] ; then
+            ((ITEM_COUNT++))
+            options+=($ITEM_COUNT $REPO_NAME)
+		fi
+	done
+    
+
+	choice=$(whiptail --title "GIT Operations" --menu "$GITPATH" 28 78 20 "${options[@]}" 3>&2 2>&1 1>&3)
+	[ $? != 0 ] && status=1
+
+	# remove spaces
+	choice=$(echo $choice | sed -e 's/^ *//g' -e 's/ *$//g')
+
+	case "$choice" in
+
+		"[..]")
+            if [ "$WD" != "/" ] ; then 
+                cd ..
+                #changeDirectory
+            fi
+		;;
+		
+		"Add")
+			addRepository
+		;;
+		
+		"Delete")
+			showRepoList
+		;;
+
+		"Move")
+			showRepoList
+		;;
+
+		"List")
+			listRepositories
+		;;
+		
+		"-")
+		;;
+
+		#"D")
+        #    
+        #    cd "$choice"
+		#;;
+
+		"Exit")
+			status=1
+			exit
+		;;
+
+		*)
+            if [ ! -z "$choice" ] ; then
+                re='^[0-9]+$'
+                if ! [[ $choice =~ $re ]] ; then
+                    # DIR
+                    choice=$(echo $choice | sed -e 's/^\[//g' -e 's/\]$//g')
+                    cd "$choice"
+                else
+                    # NUMBER
+                    foundIndex=0
+                    for str in "${options[@]}"; do
+                        if [ $foundIndex = 1 ] ; then
+                            showRepoDetails "$str"
+                            break
+                        fi
+                        if [ "$str" = "$choice" ]; then
+                            foundIndex=1
+                        fi
+                    done
+                fi
+            fi
+		;;
+	esac
+done
