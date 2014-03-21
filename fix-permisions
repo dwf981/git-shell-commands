@@ -1,0 +1,4 @@
+#!/bin/bash
+chown -R git:git /home/git
+chown -R tvc:tvc /home/tvc
+find /home/git/git-shell-commands -type f -exec chmod 744 {} \;

@@ -1,0 +1,8 @@
+#!/bin/bash
+BUNDLE_FILE=$(sed -e 's/\//./g' -e 's/.home.git./\/home\/tvc\/Dropbox\/git\/git\//g' <<<"$1")
+BUNDLE_FILE="$BUNDLE_FILE.bundle"
+
+pushd "$1" >/dev/null 
+echo "Processing $BUNDLE_FILE ..."
+git bundle create $BUNDLE_FILE --all
+popd >/dev/null

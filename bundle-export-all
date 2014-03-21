@@ -1,0 +1,3 @@
+#!/bin/bash
+find /home/git -type d -name '*.git' -exec /home/git/git-shell-commands/bundle-export-single {} \;
+echo Done.

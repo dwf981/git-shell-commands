@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Fixing $1 ...
+mkdir -p "$1/hooks" >/dev/null 2>&1
+cp -f /usr/share/git-core/templates/hooks/post-update "$1/hooks/"
