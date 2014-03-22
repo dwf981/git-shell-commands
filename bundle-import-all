@@ -1,0 +1,3 @@
+#!/bin/bash
+find /home/tvc/Dropbox/git/git -type f -name '*.git.bundle' -exec /home/git/git-shell-commands/bundle-import-single {} \;
+echo Done.

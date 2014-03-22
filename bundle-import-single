@@ -1,0 +1,8 @@
+#!/bin/bash
+GIT_DIR=$(sed -e 's/\/home\/tvc\/Dropbox\/git\/git\//\/home\/git\//g' <<<"$1")
+GIT_DIR=${GIT_DIR%.bundle}
+GIT_DIR=$(sed -e 's/\./\//g' <<<"$GIT_DIR")
+GIT_DIR=${GIT_DIR%/git}.git
+
+echo "Processing $1 ..."
+git clone --bare --mirror "$1" "$GIT_DIR"
