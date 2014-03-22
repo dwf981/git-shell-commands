@@ -2,3 +2,8 @@
 chown -R git:git /home/git
 chown -R tvc:tvc /home/tvc
 find /home/git/git-shell-commands -type f -exec chmod 744 {} \;
+find /home/tvc/Dropbox/git/ -type d -exec chmod 770 {} \;
+find /home/tvc/Dropbox/git/ -type f -exec chmod 660 {} \;
+chmod 770 /home/tvc
+chmod 770 /home/tvc/Dropbox
+chmod 770 /home/tvc/Dropbox/git
