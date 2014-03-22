@@ -1,3 +1,5 @@
 #!/bin/bash
+chmod 755 /home/git/git-shell-commands/hooks/post-update
+cp -f /home/git/git-shell-commands/hooks/post-update /usr/share/git-core/templates/hooks/
 find /home/git -type d -name '*.git' -exec /home/git/git-shell-commands/fix-post-update-single {} \;
 echo Done.

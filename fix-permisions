@@ -7,3 +7,4 @@ find /home/tvc/Dropbox/git/ -type f -exec chmod 660 {} \;
 chmod 770 /home/tvc
 chmod 770 /home/tvc/Dropbox
 chmod 770 /home/tvc/Dropbox/git
+chmod 755 /home/git/git-shell-commands/hooks/post-update

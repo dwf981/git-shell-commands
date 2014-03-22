@@ -1,0 +1,11 @@
+#!/bin/bash
+BUNDLE_FILE=$(sed -e 's/\//./g' -e 's/.home.git./\/home\/tvc\/Dropbox\/git\/git\//g' <<<"$PWD")
+BUNDLE_FILE="$BUNDLE_FILE.bundle"
+
+git bundle create "$BUNDLE_FILE" --all
+
+if [ 0 = $? ] ; then
+  echo "Successfully dumped the git bundle to the Dropbox directory ($BUNDLE_FILE)."
+else
+  echo "ERROR: Problem dumping the git bundle to the Dropbox directory ($BUNDLE_FILE)."
+fi
